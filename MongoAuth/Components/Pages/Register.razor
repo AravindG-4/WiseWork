@@ -1,0 +1,70 @@
+﻿@page "/register"
+@rendermode InteractiveServer
+@using MongoAuth.Services
+@inject MongoDBServices MongoService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Register</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="form" @bind-IsValid="@success">
+                <MudTextField @bind-Value="username" Label="Username" Required="true"
+                              RequiredError="Username is required!" />
+                <MudTextField @bind-Value="email" Label="Email" Required="true"
+                              RequiredError="Email is required!"
+                              InputType="InputType.Email" />
+                <MudTextField @bind-Value="password" Label="Password" Required="true"
+                              RequiredError="Password is required!"
+                              InputType="InputType.Password" />
+                <MudTextField @bind-Value="confirmPassword" Label="Confirm Password" Required="true"
+                              RequiredError="Password confirmation is required!"
+                              InputType="InputType.Password" />
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary"
+                       Class="ml-auto" OnClick="HandleRegister" Disabled="@(!success)">Register</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    MudForm form;
+    bool success;
+    string username = string.Empty;
+    string email = string.Empty;
+    string password = string.Empty;
+    string confirmPassword = string.Empty;
+
+    private async Task HandleRegister()
+    {
+        if (password != confirmPassword)
+        {
+            Snackbar.Add("Passwords do not match", Severity.Error);
+            return;
+        }
+
+        try
+        {
+            var user = new User
+                {
+                    Username = username,
+                    Email = email,
+                    Password = password,
+                    // Roles = "user" Default role
+                };
+
+            await MongoService.RegisterUser(user);
+            Snackbar.Add("Registration successful!", Severity.Success);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Registration failed: {ex.Message}", Severity.Error);
+        }
+    }
+}

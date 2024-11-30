@@ -1,0 +1,49 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+<CascadingAuthenticationState>
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
+        <MudSpacer />
+
+
+                <MudButton OnClick="@(() => NavigationManager.NavigateTo("/login"))" 
+                          Variant="Variant.Filled" Color="Color.Primary" Class="mx-2">Login</MudButton>
+                <MudButton OnClick="@(() => NavigationManager.NavigateTo("/register"))" 
+                          Variant="Variant.Filled" Color="Color.Secondary">Register</MudButton>
+
+
+    </MudAppBar>
+
+    <MudDrawer Open=true ClipMode="DrawerClipMode.Always" Elevation="2">
+        <MudNavMenu>
+
+            <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
+            <MudNavLink Href="/counter" Match="NavLinkMatch.Prefix">Counter</MudNavLink>
+            <MudNavLink Href="/todo" Match="NavLinkMatch.Prefix">TODO</MudNavLink>
+            <MudNavLink Href="/openweather" Match="NavLinkMatch.Prefix">Weather</MudNavLink>
+            <MudNavLink Href="/claims-principal-data" Match="NavLinkMatch.Prefix">Claims</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+    <MudMainContent>
+        <div class="top-row px-4">
+            <LogoutText />
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+</CascadingAuthenticationState>

@@ -1,0 +1,29 @@
+@inherits UserContext
+@rendermode InteractiveServer
+<AuthorizeView>
+    <Authorized>
+        <div>
+            <b>@User.Username</b> | <a @onclick="logout">Logout</a>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div>
+            <a @onclick="Login">Login</a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code{
+
+    void Login()
+    {
+        NavTo("/login");
+    }
+
+    async Task logout()
+    {
+        Console.WriteLine("Logging out: " + User.Username);
+        await Logout(User.Id);
+    }
+}

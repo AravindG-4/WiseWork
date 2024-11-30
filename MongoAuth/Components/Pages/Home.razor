@@ -1,0 +1,49 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Home</PageTitle>
+
+<MudLayout>
+    <MudText Typo="Typo.h2">Home</MudText>
+    <MudText>Welcome To Blazor Auto Web Application</MudText>
+    <AuthorizeView>
+        <Authorized>
+            <p>Hello, @uname!</p>
+        </Authorized>
+        <NotAuthorized>
+            <p>You're not authorized.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudLayout>
+
+@code {
+    private string? uname;
+    private string? email;
+    private string? role;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            uname = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+            email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+            role = user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+        }
+        else
+        {
+            uname = null;
+            email = null;
+            role = null;
+        }
+    }
+    // public async Task<string?> GetClaimValue(string claimType)
+    // {
+    //     var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+    //     var authuser = authState.User;
+    //     return authuser?.Claims.FirstOrDefault(c => c.Type == claimType)?.Value ?? null;
+    // }
+}
