@@ -1,30 +1,35 @@
-﻿@page "/claims-principal-data"
-@rendermode InteractiveServer
+﻿@page "/claims"
+
 @using System.Security.Claims
 @using MongoAuth.Services
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
+@* Bootstrap container for centering content *@
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="text-center">
+        <h1>ClaimsPrincipal Data</h1>
 
-<h1>ClaimsPrincipal Data</h1>
+        <button class="btn btn-primary" @onclick="GetClaimsPrincipalData">Get ClaimsPrincipal Data</button>
 
-<button @onclick="GetClaimsPrincipalData">Get ClaimsPrincipal Data</button>
+        <p>@authMessage</p>
 
-<p>@authMessage</p>
-
-@if (claims.Any())
-{
-    <ul>
-        @foreach (var claim in claims)
+        @if (claims.Any())
         {
-            <li>@claim.Type: @claim.Value</li>
+            <ul class="list-unstyled">
+                @foreach (var claim in claims)
+                {
+                    <li>@claim.Type: @claim.Value</li>
+                }
+            </ul>
+            <br />
+            <p><strong>UserName : </strong>@uname</p>
+            <p><strong>Email : </strong>@email</p>
+            <p><strong>Role : </strong>@role</p>
         }
-        <p>@uname</p>
-        <p>@email</p>
-        <p>@role</p>
-    </ul>
-}
 
-<p>@surname</p>
+        <p>@surname</p>
+    </div>
+</div>
 
 @code {
     private string? authMessage;

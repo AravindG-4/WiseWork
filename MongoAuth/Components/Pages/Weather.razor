@@ -1,18 +1,65 @@
 ﻿@page "/openweather"
 @attribute [CustomAuthorize("user")]
-@inject HttpClient Http
-@rendermode InteractiveAuto
-@inject IConfiguration Configuration
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using MongoAuth.Services
+@using MongoAuth.Shared.Models
+@inject MongoDBServices mongoDBServices
+@inject UserFavService UserFavService
+@inject NavigationManager Navigation
+@inject WeatherFetchService WeatherFetchService
+
 <PageTitle>Weather</PageTitle>
 
 <MudContainer Class="mt-4">
-    <MudText Typo="Typo.h4">Weather Forecast</MudText>
+    <MudText Typo="Typo.h3">Weather Forecast</MudText>
+    <MudText Typo="Typo.h6" Class="mt-2">@userName's Favourites :</MudText>
+    @if (authuser != null)
+    {
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 600px;">
+            <MudIcon Icon="@Icons.Material.Outlined.LocationCity" Color="Color.Primary" Class="mr-0" />
+        @if (favCity != null)
+        {
+            <MudText Typo="Typo.body1" Style="cursor: pointer;" Class="mt-5 mb-5 mr-5" @onclick="GetWeatherDataFav">
+                @favCity
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body1" Class="mt-3 mb-5 mr-5">
+                No Favourite City
+            </MudText>
+        }
+
+        <MudIcon Icon="@Icons.Material.Outlined.Cloud" Color="Color.Primary" Class="mr-0" />
+        @if (favWeather != null)
+        {
+            <MudText Typo="Typo.body1" Class="mt-5 mb-5">
+                @favWeather
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ChangeFavWeather"
+                Class="mt-0 ml-2" Style="padding-top: 1px; padding-bottom: 1px;">Change Fav Weather</MudButton>
+        }
+        else
+        {
+            <MudSelect T="string" Class="mt-1 mb-5" Style="flex-shrink: 0; width: 120px;" Label="Add Favourite Weather" ValueChanged="AddFavouriteWeather">
+                <MudSelectItem T="string" Value="@("Light Rain")">Light Rain</MudSelectItem>
+                <MudSelectItem T="string" Value="@("Moderate Rain")">Moderate Rain</MudSelectItem>
+                <MudSelectItem T="string" Value="@("Broken Clouds")">Broken Clouds</MudSelectItem>
+                <MudSelectItem T="string" Value="@("Overcast Clouds")">Overcast Clouds</MudSelectItem>
+                <MudSelectItem T="string" Value="@("Scattered Clouds")">Scattered Clouds</MudSelectItem>
+            </MudSelect>
+
+        }
+
+        </div>
+    }
 
     <MudText Typo="Typo.body1" Class="mb-4">Get the 5-day weather forecast for any city.</MudText>
 
-    <MudTextField Label="Enter City" Variant="Variant.Filled" @bind-Value="city" Placeholder="e.g. New York" />
+    <MudTextField Label="Enter City" Variant="Variant.Filled" @bind-Value="city" Immediate="true" Placeholder="e.g. Coimbatore" />
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="GetWeatherData">Get Weather</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" Disabled="@ButtonDisabled" OnClick="((e) => GetWeatherData())">Get Weather</MudButton>
 
     @if (forecasts == null || !forecasts.Any())
     {
@@ -20,7 +67,7 @@
     }
     else
     {
-        <MudText Class="mt-4" Color="Color.Success"><em>Got Weather info of @city for next 5 days.</em></MudText>
+        <MudText Class="mt-4" Color="Color.Success"><em>Got Weather info of @SearchCity for next 5 days.</em></MudText>
 
         <MudGrid Class="mt-4">
             @foreach (var groupedForecast in forecasts.GroupBy(f => f.Date))
@@ -35,7 +82,17 @@
                                 <MudText>
                                     <strong>Time:</strong> @forecast.Time <br />
                                     <strong>Temperature:</strong> @forecast.TemperatureC °C <br />
-                                    <strong>Summary:</strong> @forecast.Summary
+                                    @if (forecast.Summary == favWeather.ToLower())
+                                    {
+                                        <strong>Summary:</strong>
+                                        <span style="background-color: green; color: white; padding: 2px 5px;">
+                                            @forecast.Summary
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <strong>Summary:</strong> @forecast.Summary
+                                    }
                                 </MudText>
                             }
                         </MudCardContent>
@@ -47,95 +104,80 @@
 </MudContainer>
 
 @code {
-    private List<WeatherForecast> forecasts = new List<WeatherForecast>();
+    // public string? selectedWeather;
+    private string? userName;
+    private string? email;
+    private string? userId;
+    private User? authuser { get; set; }
+    string? favCity { get; set; }
+    string? favWeather { get; set; }
+    private List<WeatherFetchService.WeatherForecast> forecasts = new List<WeatherFetchService.WeatherForecast>();
     private string? city;
+    public bool ButtonDisabled => string.IsNullOrEmpty(city);
+    protected string? SearchCity { get; private set; }
 
-    private async Task GetWeatherData()
+    protected override async Task OnInitializedAsync()
     {
-        if (!string.IsNullOrWhiteSpace(city))
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
         {
-            Console.WriteLine($"Fetching weather data for {city}...");
-
-            var forecastList = await FetchWeatherForecastAsync(city);
-            if (forecastList != null)
-            {
-                Console.WriteLine($"Received weather data for {city}");
-
-                // Add new forecast list
-                forecasts = forecastList;
-            }
-            else
-            {
-                Console.WriteLine($"No weather data received for {city}");
-            }
+            userName = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+            email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+            Console.WriteLine(email);
         }
         else
         {
-            Console.WriteLine("City name is empty or invalid.");
+            email = null;
         }
-    }
 
-    private async Task<List<WeatherForecast>?> FetchWeatherForecastAsync(string cityName)
-    {
-        try
+        Console.WriteLine("Getting User");
+        authuser = await mongoDBServices.GetUserByEmail(email);
+        userId = authuser.Id;
+        Console.WriteLine($"Got User : {userId}");
+        await UserFavService.GetFavouritesAsync(userId);
+        favCity = UserFavService.GetFavCity();
+        favWeather = UserFavService.GetFavWeather();
+
+        var uri = Navigation.Uri;
+        var queryParameters = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(uri).Query);
+
+        // Check if the 'trigger' parameter is present and true
+        if (queryParameters.ContainsKey("trigger") && queryParameters["trigger"] == "true")
         {
-            string apiKey = Configuration["OpenWeather:API_KEY"];
-            var url = $"https://api.openweathermap.org/data/2.5/forecast?q={cityName}&appid={apiKey}&units=metric";
-            Console.WriteLine($"Sending request to: {url}");
-
-            var response = await Http.GetFromJsonAsync<OpenWeatherResponse>(url);
-
-            if (response != null && response.List.Any())
-            {
-                return response.List.Select(item =>
-                {
-                    var dateTime = DateTimeOffset.FromUnixTimeSeconds(item.Dt).DateTime;
-
-                    return new WeatherForecast
-                        {
-                            Date = dateTime.Date,
-                            Time = dateTime.ToString("HH:mm"),
-                            TemperatureC = (int)item.Main.Temp,
-                            Summary = item.Weather.FirstOrDefault()?.Description ?? "No description"
-                        };
-                }).ToList();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error fetching weather data: {ex.Message}");
+            await GetWeatherDataFav();
         }
 
-        return null;
     }
 
-    private class WeatherForecast
+    private async Task GetWeatherDataFav()
     {
-        public DateTime Date { get; set; }
-        public string? Time { get; set; }
-        public int TemperatureC { get; set; }
-        public string? Summary { get; set; }
+        city = favCity;
+        await GetWeatherData();
     }
 
-    private class OpenWeatherResponse
+    private async Task AddFavouriteWeather(string value)
     {
-        public List<WeatherItem> List { get; set; } = new List<WeatherItem>();
+        favWeather = value;
+        Console.WriteLine($"Favourite Weather Selected: {favWeather}");
+        await UserFavService.UpdateFavWeather(favWeather);
     }
 
-    private class WeatherItem
+    private async Task ChangeFavWeather()
     {
-        public long Dt { get; set; } // Unix timestamp
-        public Main Main { get; set; } = new Main();
-        public List<WeatherDescription> Weather { get; set; } = new List<WeatherDescription>();
+        forecasts = new List<WeatherFetchService.WeatherForecast>();
+        favWeather = null;
+        Console.WriteLine($"Favourite Weather Selected: {favWeather}");
+        await UserFavService.UpdateFavWeather(favWeather);
     }
 
-    private class Main
+    private async Task GetWeatherData()
     {
-        public float Temp { get; set; }
-    }
-
-    private class WeatherDescription
-    {
-        public string Description { get; set; } = string.Empty;
+        SearchCity = city;
+        city = string.Empty;
+        forecasts = await WeatherFetchService.GetWeatherData(userId, SearchCity);
+        favCity = UserFavService.GetFavCity();
+        StateHasChanged();
     }
 }

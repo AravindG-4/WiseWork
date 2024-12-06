@@ -12,6 +12,7 @@ using System.Text;
 using MongoAuth.Shared.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.JSInterop;
 //using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +32,9 @@ builder.Services.AddSingleton(sp =>
 });
 builder.Services.AddSingleton<MongoDBServices>();
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddSingleton<UserFavService>();
+builder.Services.AddSingleton<WeatherFetchService>();
+//builder.Services.AddSingleton<IJSRuntime>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 //builder.Services.AddScoped<ICookieService, CookieService>();
 builder.Services.AddSingleton<UserContext>();
@@ -159,8 +163,8 @@ app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(MongoAuth.Client._Imports).Assembly);
+    .AddInteractiveWebAssemblyRenderMode();
+    //.AddAdditionalAssemblies(typeof(MongoAuth.Client._Imports).Assembly);
 
 app.MapHub<ToDoHub>("/mongoToDo");
 

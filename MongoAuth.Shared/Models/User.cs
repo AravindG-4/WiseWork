@@ -25,9 +25,6 @@ namespace MongoAuth.Shared.Models
         public string Password { get; set; }
 
         [BsonElement("role")]
-        public string Role { get; set; } = "user"; // Default role new() { UserRole.User.ToString() }
-
-        [BsonElement("jwtToken")]
-        public string? JwtToken { get; set; } = null;
+        public string Role { get; set; } = "user"; // Default role
     }
 }

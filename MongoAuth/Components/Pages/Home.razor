@@ -1,23 +1,144 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject MongoDBServices mongoDBServices
+@inject UserFavService UserFavService
+@inject NavigationManager NavigationManager
+@inject WeatherFetchService WeatherFetchService
+@inject ISnackbar Snackbar
 
 <PageTitle>Home</PageTitle>
 
-<MudLayout>
-    <MudText Typo="Typo.h2">Home</MudText>
-    <MudText>Welcome To Blazor Auto Web Application</MudText>
-    <AuthorizeView>
-        <Authorized>
-            <p>Hello, @uname!</p>
-        </Authorized>
-        <NotAuthorized>
-            <p>You're not authorized.</p>
-        </NotAuthorized>
-    </AuthorizeView>
-</MudLayout>
+    <MudMainContent Class="mt-0 pt-1">
+        <MudContainer Class="mt-3 px-8" MaxWidth="MaxWidth.False">
+            <MudGrid>
+            <MudItem xs="12" sm="6" md="4" @onclick="() => NavTo(1)">
+                    <MudPaper Elevation="2" Class="pa-4 clickable-item" Style="height: 200px; background-color: #e8f5e9; color: #1b5e20; position: relative;">
+                        <div class="mt-2 ml-2" style="position: absolute; top: 10px; left: 10px;">
+                        <MudIcon Icon="@Icons.Material.Filled.QuestionAnswer"/> ABOUT THE PROJECT
+                    </div>
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100%; color:#263238; font-size: 1.0rem;">
+                            <span>Know what this application has!</span>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            <MudItem xs="12" sm="6" md="4" @onclick="() => NavTo(2)">
+                <MudPaper Elevation="2" Class="pa-4 clickable-item" Style="height: 200px; background-color: #e8f5e9; color: #1b5e20; position: relative;">
+                    <div class="mt-2 ml-2" style="position: absolute; top: 10px; left: 10px;">
+                        <MudIcon Icon="@Icons.Material.Filled.AddBox" Class="mb-1"/> COUNTER
+                        </div>
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100%; color:#263238; font-size: 1.0rem;">
+                        <span>Requires Admin or User Access!</span>
+                    </div>
+                </MudPaper>
+                </MudItem>
+            <MudItem xs="12" sm="12" md="4" @onclick="() => NavTo(3)">
+                <MudPaper Elevation="2" Class="pa-4 clickable-item" Style="height: 200px; background-color: #e8f5e9; color: #1b5e20; position: relative;">
+                    <div class="mt-2 ml-2" style="position: absolute; top: 10px; left: 10px;">
+                        <MudIcon Icon="@Icons.Material.Filled.Security" Class="mb-1" /> CLAIMS PRINCIPLE
+                    </div>
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100%; color:#263238; font-size: 1.0rem;">
+                        <span>Claims of User Details cached</span>
+                    </div>
+                </MudPaper>
+                </MudItem>
+            <MudItem xs="12" sm="6">
+                    <MudGrid>
+                    <MudItem xs="12" @onclick="() => NavTo(4)">
+                        <MudPaper Elevation="2" Class="pa-4 clickable-item" Style="height: 200px; background-color: #e8f5e9; color: #1b5e20; position: relative;">
+                            <div class="mt-2 ml-2" style="position: absolute; top: 10px; left: 10px;">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Class="mb-1" /> TO-DO APPLICTION
+                            </div>
+                            <div style="display: flex; justify-content: center; align-items: center; height: 100%; color:#263238; font-size: 1.0rem;">
+                                <span>Requires Admin Access!<br />Manage your Tasks</span>
+                            </div>
+                        </MudPaper>
+                        </MudItem>
+                    <MudItem xs="12" @onclick="() => NavTo(5)">
+                        <MudPaper Elevation="2" Class="pa-4 clickable-item" Style="height: 200px; background-color: #e8f5e9; color: #1b5e20; position: relative;">
+                            <div class="mt-2 ml-2" style="position: absolute; top: 10px; left: 10px;">
+                                <MudIcon Icon="@Icons.Material.Filled.StackedBarChart" Class="mb-2" /> KNOW THE STACKS USED
+                            </div>
+                            <div style="display: flex; justify-content: center; align-items: center; height: 100%; color:#263238; font-size: 1.0rem;">
+                                <span>Learn what is used in this project!</span>
+                            </div>
+                        </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+                </MudItem>
+            <MudItem xs="12" sm="6" md="6" @onclick="() => NavTo(6)">
+                <MudPaper Elevation="3" Class="pa-3 clickable-item" Style="height: 100%; width: 100%; background-color: #e8f5e9; color: #1b5e20; position: relative; display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Header Section -->
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <MudIcon Icon="@Icons.Material.Filled.Thunderstorm" />
+                        <MudText Typo="Typo.h6" Style="color: #1b5e20;">WEATHER FORECASTING</MudText>
+                    </div>
+
+                    <!-- Center Content Section -->
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 0.5rem;">
+                        <AuthorizeView>
+                            <Authorized>
+                                <MudText Typo="Typo.body1" Style="color: #263238;">
+                                    Get 5-day weather forecasts!<br />
+                                    <strong>Fav City:</strong> @favCity<br />
+                                    <strong>Fav Weather:</strong> @favWeather
+                                </MudText>
+                            </Authorized>
+                            <NotAuthorized>
+                                <MudText Typo="Typo.body1" Style="color: #263238;">
+                                    Get 5-day weather forecasts!<br />
+                                    <strong>Requires User Access!</strong>
+                                </MudText>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+
+                    <!-- Footer Section -->
+                    <AuthorizeView>
+                        <Authorized>
+                    <div style="text-align: center;">
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Medium" OnClick="@GetWeather">
+                            View Forecast for Fav City
+                        </MudButton>
+                    </div>
+                    
+                        </Authorized>
+                        <NotAuthorized>
+                    <div style="text-align: center;">
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Medium" Disabled="true">
+                            View Forecast
+                        </MudButton>
+                    </div>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </MudPaper>
+            </MudItem>
+
+            </MudGrid>
+        </MudContainer>
+    </MudMainContent>
+
+<style>
+    .clickable-item {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .clickable-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2); 
+        }
+</style>
 
 @code {
+    // [CascadingParameter] 
+    // public User? AuthUser{ get; set; }
+    private static bool hasAlertShown = false;
+    private static int count = 1;
+    private User? authuser { get; set; }
+    private string? userId;
+    string? favCity { get; set; }
+    string? favWeather { get; set; }
     private string? uname;
     private string? email;
     private string? role;
@@ -32,18 +153,80 @@
             uname = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
             email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
             role = user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+            Console.WriteLine(email);
+
+            authuser = await mongoDBServices.GetUserByEmail(email);
+            userId = authuser.Id;
+            Console.WriteLine($"Got User : {userId}");
+            if (role != "admin")
+            {
+                await UserFavService.GetFavouritesAsync(userId);
+                favCity = UserFavService.GetFavCity();
+                favWeather = UserFavService.GetFavWeather();
+
+                if (!hasAlertShown)
+                {
+                    if (count == 2)
+                    {
+                        hasAlertShown = true;
+                    }
+                    Console.WriteLine("Triggering Alert");
+                    MarkupString? AlertMessage = await WeatherFetchService.NextFavAlert(userId, favCity, favWeather);
+                    Console.WriteLine($"AlertMessage: {AlertMessage}");
+                    if (AlertMessage != null)
+                    {
+                        Snackbar.Add(new MarkupString(AlertMessage.ToString()), Severity.Info, async options =>
+                        {
+                            options.Action = "More";
+                            options.ActionColor = Color.Primary;
+                            options.Onclick = async snackbar =>
+                            {
+                                GetWeather();
+                                await Task.CompletedTask;
+                            };
+                        });
+                    }
+                    count++;
+                }
+            }
         }
         else
         {
-            uname = null;
             email = null;
-            role = null;
         }
     }
-    // public async Task<string?> GetClaimValue(string claimType)
-    // {
-    //     var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-    //     var authuser = authState.User;
-    //     return authuser?.Claims.FirstOrDefault(c => c.Type == claimType)?.Value ?? null;
-    // }
+    
+
+    private void GetWeather()
+    {
+        NavigationManager.NavigateTo("/openweather?trigger=true");
+    }
+
+    public void NavTo(int Location)
+    {
+        switch(Location)
+        {
+            case 1:
+                NavigationManager.NavigateTo("/about");
+                break;
+            case 2:
+                NavigationManager.NavigateTo("/counter");
+                break;
+            case 3:
+                NavigationManager.NavigateTo("/claims");
+                break;
+            case 4:
+                NavigationManager.NavigateTo("/todo");
+                break;
+            case 5:
+                NavigationManager.NavigateTo("/stacks");
+                break;
+            case 6:
+                NavigationManager.NavigateTo("/openweather");
+                break;
+            default:
+                NavigationManager.NavigateTo("/");
+                break;
+        }
+    }
 }

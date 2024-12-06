@@ -24,7 +24,7 @@ namespace MongoAuth.Services
         private readonly MongoDBServices _mongoDBServices;
         private readonly IConfiguration _configuration;
 
-        private AuthenticationState _cachedAuthState;
+        private AuthenticationState? _cachedAuthState = null;
 
         public AuthenticationProvider(
         IHttpContextAccessor httpContextAccessor,
@@ -41,16 +41,48 @@ namespace MongoAuth.Services
         // This sets the Authentication State with User Roles
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            if (_cachedAuthState != null)
-                return _cachedAuthState;
+            Console.WriteLine("From Get Auth State Function 1");
 
+            if (_cachedAuthState != null)
+            {
+                Console.WriteLine($"Using Cached Auth State : {_cachedAuthState.User.Identity?.Name}");
+                return _cachedAuthState;
+            }
+
+            Console.WriteLine("From Get Auth State Function 2");
+            var authState = await FetchAuthState();
+            _cachedAuthState = authState;
+
+            Console.WriteLine($"Fetched New Auth State : {authState.User.Identity?.Name}");
+            return authState;
+        }
+
+        public void SetUser(User? user)
+        {
+            Console.WriteLine("Hitting SetUser");
+            Console.WriteLine("UserName: " + user?.Username);
+            if (user == null)
+            {
+                //User.Username = null;
+                User = new User();
+            }
+            else
+            {
+                User = user;
+            }
+            _cachedAuthState = null;
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        }
+        public async Task<AuthenticationState> FetchAuthState()
+        {
             var cookies = _httpContextAccessor.HttpContext.Request.Cookies;
             var token = cookies.ContainsKey("auth_token") ? cookies["auth_token"] : null;
-            Console.WriteLine("Got Token : " + token);
+            //Console.WriteLine("Got Token : " + token);
             if (string.IsNullOrEmpty(token))
             {
-                _cachedAuthState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-                return _cachedAuthState;
+                //_cachedAuthState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                //return _cachedAuthState;
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
             // Decode the JWT token and check validity.
@@ -73,39 +105,26 @@ namespace MongoAuth.Services
                 };
 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+                var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+                Console.WriteLine("Email extracted from JWT: " + email);
                 jwtToken = tokenHandler.ReadJwtToken(token);
-                Console.WriteLine("Token : " + jwtToken);
-                var user = await _mongoDBServices.GetUserByToken(token);
+                //Console.WriteLine("Token : " + jwtToken);
+                var user = await _mongoDBServices.GetUserByEmail(email);
                 if (user != null)
                 {
                     User = user;
-                    _cachedAuthState = new AuthenticationState(principal);
-                    return _cachedAuthState;
+                    //_cachedAuthState = new AuthenticationState(principal);
+                    //return _cachedAuthState;
+                    return new AuthenticationState(principal);
                 }
             }
             catch
             {
                 Console.WriteLine("Token Invalid");
             }
-                _cachedAuthState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-                return _cachedAuthState;
-        }
-
-        public void SetUser(User? user)
-        {
-            Console.WriteLine("Hitting SetUser");
-            if (user == null)
-            {
-                //User.Username = null;
-                User = new User();
-                _cachedAuthState = null;
-            }
-            else
-            {
-                User = user;
-                _cachedAuthState = null;
-            }
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            //_cachedAuthState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            //return _cachedAuthState;
+            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }
 }

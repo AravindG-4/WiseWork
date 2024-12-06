@@ -47,7 +47,12 @@
             Snackbar.Add("Passwords do not match", Severity.Error);
             return;
         }
-
+        var temp = await MongoService.GetUserByEmail(email);
+        if (temp != null)
+        {
+            Snackbar.Add("Email already exists", Severity.Error);
+            return;
+        }
         try
         {
             var user = new User

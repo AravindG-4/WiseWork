@@ -8,7 +8,7 @@
         }
     </Authorized>
     <Authorizing>
-        <div>
+        <div class="mt-4">
             <h2>Please Wait...</h2>
         </div>
     </Authorizing>
@@ -26,11 +26,13 @@
                                   RequiredError="Password is required!"
                                   InputType="InputType.Password" />
                 </MudCardContent>
-                <MudCardActions>
+                <MudCardActions Class="d-flex justify-content-between align-items-center">
+                    <MudButton Variant="Variant.Text" OnClick="@NavigateToRegister" Color="Color.Secondary">
+                        New? Register
+                    </MudButton>
                     <MudButton OnClick="HandleLogin"
                                Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Class="ml-auto">Login</MudButton>
+                               Color="Color.Primary">Login</MudButton>
                 </MudCardActions>
             </MudCard>
         </MudContainer>
@@ -64,5 +66,10 @@
         {
             AutoNavigate();
         }
+    }
+
+    public void NavigateToRegister()
+    {
+        NavTo("/register");
     }
 }

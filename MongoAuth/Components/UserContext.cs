@@ -26,14 +26,15 @@ public class UserContext : ComponentBase
 
     protected override async void OnInitialized()
     {
+        Console.WriteLine("From UserContext");
         Auth = (AuthenticationProvider)Asp;
-        await UserReAuthorize();
+        //await UserReAuthorize();
     }
 
-    public virtual Task OnAfterRenderContextAsync(bool firstRender)
-    {
-        return Task.CompletedTask;
-    }
+    //public virtual Task OnAfterRenderContextAsync(bool firstRender)
+    //{
+    //    return Task.CompletedTask;
+    //}
 
 
     // Cookie Writer
@@ -54,11 +55,11 @@ public class UserContext : ComponentBase
         await _jsRuntime.InvokeVoidAsync("CookieRemover.Delete", cookieName);
     }
 
-    public async Task<bool> Login()
-    {
-        if (await UserReAuthorize()) { return true; }
-        return false;
-    }
+    //public async Task<bool> Login()
+    //{
+    //    if (await UserReAuthorize()) { return true; }
+    //    return false;
+    //}
 
     public async Task<bool> Login(string email, string password)
 
@@ -77,29 +78,29 @@ public class UserContext : ComponentBase
         Auth.SetUser(user);
         Console.WriteLine("user set");
         //Auth.NotifyUserAuthentication();
-        Database.UpdateUserToken(user, token);
+        //Database.UpdateUserToken(user, token);
         return true;
     }
 
     public async Task Logout(string userid)
     {
         await DeleteCookie("auth_token");
-        await Database.RemoveUserToken(userid);
+        //await Database.RemoveUserToken(userid);
         Auth.SetUser(null);
         NavTo("/");
     }
 
-    public async Task<bool> UserReAuthorize()
-    {
-        string token = await ReadCookie("auth_token");
-        if (string.IsNullOrEmpty(token)) { return false; }
+    //public async Task<bool> UserReAuthorize()
+    //{
+    //    string token = await ReadCookie("auth_token");
+    //    if (string.IsNullOrEmpty(token)) { return false; }
 
-        var user = await Database.GetUserByToken(token);
-        if (user == null) { return false; }
+    //    var user = await Database.GetUserByToken(token);
+    //    if (user == null) { return false; }
 
-        Auth.SetUser(user);
-        return true;
-    }
+    //    Auth.SetUser(user);
+    //    return true;
+    //}
 
     public void NavTo(string path, bool refresh = true)
     {

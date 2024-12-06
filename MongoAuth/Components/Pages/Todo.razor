@@ -1,21 +1,25 @@
 ﻿@page "/todo"
 @rendermode InteractiveServer
-@attribute [CustomAuthorize("admin")]
+@attribute [CustomAuthorize("user")]
 @using MongoAuth.Shared.Models
 @inject NavigationManager Navigation
 @inject MongoDBServices MongoService
 
 <PageTitle>To-Do</PageTitle>
 
-<MudLayout>
+<MudLayout Class="container">
 
     <MudText Typo="Typo.h2">To-Do</MudText>
-    <MudText>Manage your tasks here</MudText>
+    <MudText Class="mt-3 mb-3">Manage your tasks here</MudText>
 
-    <MudPaper Class="mt-6" Elevation="0">
-        <MudTextField Style="width:700px" Class="d-inline-flex" Label="Add Your New Task" Variant="Variant.Filled" @bind-Value="UserInput" Immediate="true" />
-        <MudButton Class="ml-5 mt-3 d-inline-flex" Variant="Variant.Filled" Color="Color.Primary" Disabled="@ButtonDisabled" OnClick="AddTask">Add Task</MudButton>
-    </MudPaper>
+    <MudGrid>
+        <MudItem xs="6">
+        <MudTextField Label="Add Your New Task" Variant="Variant.Filled" @bind-Value="UserInput" Immediate="true" />
+        </MudItem>
+        <MudItem xs="4">
+        <MudButton Class="mt-2" Variant="Variant.Filled" Color="Color.Primary" Disabled="@ButtonDisabled" OnClick="AddTask">Add Task</MudButton>
+        </MudItem>
+    </MudGrid>
 
     <MudText Typo="Typo.h5" Color="Color.Warning" Class="mt-6">Pending Tasks : @PendingToDos.Count</MudText>
 
