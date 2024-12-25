@@ -1,6 +1,11 @@
 ﻿@page "/login"
 @inherits UserContext
 @rendermode InteractiveServer
+@inject SupabaseService supabaseService
+@inject AuthenticationStateProvider Auth
+@inject Supabase.Client _supabaseClient
+@inject IJSRuntime _jsRuntime
+@inject ISnackbar Snackbar
 <AuthorizeView>
     <Authorized>
         @{
@@ -32,7 +37,8 @@
                     </MudButton>
                     <MudButton OnClick="HandleLogin"
                                Variant="Variant.Filled"
-                               Color="Color.Primary">Login</MudButton>
+                               Color="Color.Primary"
+                               Disabled="@isLoading">Login</MudButton>
                 </MudCardActions>
             </MudCard>
         </MudContainer>
@@ -41,6 +47,9 @@
 </AuthorizeView>
 
 @code {
+    User? user { get; set; }
+    private bool isLoading = false;
+    // private SnackbarMessageHandle? loggingInSnackbarHandle;
 
     [SupplyParameterFromQuery(Name = "ReturnUrl")]
     public string ReturnUrlPath { get; set; } = "";
@@ -62,10 +71,21 @@
 
     public async void HandleLogin()
     {
-        if (await Login(Email, Password))
+        isLoading = true;
+        Snackbar.Add("Logging in...", Severity.Info, options =>
+            {
+                options.RequireInteraction = true; // Prevent auto-dismiss
+            });
+        if (await LoginAsync(Email, Password))
         {
             AutoNavigate();
         }
+        else
+        {
+            Snackbar.Add("Invalid email or password", Severity.Error);
+        }
+        // loggingInSnackbarHandle?.Dispose();
+        isLoading = false;
     }
 
     public void NavigateToRegister()

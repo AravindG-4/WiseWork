@@ -11,37 +11,34 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using static Supabase.Postgrest.Constants;
 
 
 namespace MongoAuth.Services
 {
     class AuthenticationProvider : AuthenticationStateProvider
     {
-        public User User { get; private set; } = new();
+        public User? User { get; private set; } = new();
 
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly JwtTokenService _tokenService;
-        private readonly MongoDBServices _mongoDBServices;
         private readonly IConfiguration _configuration;
+        private readonly SupabaseService _supabaseService;
 
         private AuthenticationState? _cachedAuthState = null;
 
         public AuthenticationProvider(
         IHttpContextAccessor httpContextAccessor,
-        JwtTokenService tokenService,
-        MongoDBServices mongoDBServices,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        SupabaseService supabaseService)
         {
             _httpContextAccessor = httpContextAccessor;
-            _tokenService = tokenService;
-            _mongoDBServices = mongoDBServices;
             _configuration = configuration;
+            _supabaseService= supabaseService;
         }
 
-        // This sets the Authentication State with User Roles
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            Console.WriteLine("From Get Auth State Function 1");
+            //await Task.Delay(1000);
 
             if (_cachedAuthState != null)
             {
@@ -49,7 +46,6 @@ namespace MongoAuth.Services
                 return _cachedAuthState;
             }
 
-            Console.WriteLine("From Get Auth State Function 2");
             var authState = await FetchAuthState();
             _cachedAuthState = authState;
 
@@ -57,13 +53,12 @@ namespace MongoAuth.Services
             return authState;
         }
 
-        public void SetUser(User? user)
+        public async Task SetUser(User? user)
         {
             Console.WriteLine("Hitting SetUser");
-            Console.WriteLine("UserName: " + user?.Username);
+            Console.WriteLine("UserName: " + user?.name);
             if (user == null)
             {
-                //User.Username = null;
                 User = new User();
             }
             else
@@ -77,11 +72,9 @@ namespace MongoAuth.Services
         {
             var cookies = _httpContextAccessor.HttpContext.Request.Cookies;
             var token = cookies.ContainsKey("auth_token") ? cookies["auth_token"] : null;
-            //Console.WriteLine("Got Token : " + token);
+
             if (string.IsNullOrEmpty(token))
             {
-                //_cachedAuthState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-                //return _cachedAuthState;
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
@@ -108,22 +101,31 @@ namespace MongoAuth.Services
                 var email = principal.FindFirst(ClaimTypes.Email)?.Value;
                 Console.WriteLine("Email extracted from JWT: " + email);
                 jwtToken = tokenHandler.ReadJwtToken(token);
-                //Console.WriteLine("Token : " + jwtToken);
-                var user = await _mongoDBServices.GetUserByEmail(email);
+
+                var user = await _supabaseService.GetUserByEmail(email);
                 if (user != null)
                 {
                     User = user;
-                    //_cachedAuthState = new AuthenticationState(principal);
-                    //return _cachedAuthState;
-                    return new AuthenticationState(principal);
+
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Name, user.name),
+                        new Claim(ClaimTypes.Email, user.email),
+                        new Claim(ClaimTypes.Role, user.role ?? "user")
+                    };
+
+                    // Create a ClaimsIdentity and ClaimsPrincipal from the claims
+                    var identity = new ClaimsIdentity(claims, "jwt");
+                    var newPrincipal = new ClaimsPrincipal(identity);
+
+                    return new AuthenticationState(newPrincipal);
                 }
             }
             catch
             {
                 Console.WriteLine("Token Invalid");
             }
-            //_cachedAuthState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-            //return _cachedAuthState;
+
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }

@@ -1,0 +1,43 @@
+﻿@page "/about-project"
+@using MudBlazor
+@inject NavigationManager Navigation
+
+<PageTitle>About Project</PageTitle>
+
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5" Class="mb-4">About the Project</MudText>
+
+    <MudText Typo="Typo.body1">
+        This project provides an intuitive and interactive platform with the following features:
+    </MudText>
+
+    <MudList T="String" Class="mb-4">
+        <MudListItem>
+            <b>To-Do Page:</b> Users can add, complete, and delete tasks. The interface is designed to ensure ease of use while managing personal tasks.
+        </MudListItem>
+        <MudListItem>
+            <b>Weather Page:</b> Integrated with the OpenWeather API, users can search for current weather conditions. They can also set a favorite city and weather type for quick access.
+        </MudListItem>
+        <MudListItem>
+            <b>Personalized Alerts:</b> Once logged in, users receive notifications about their favorite weather condition in their chosen city. The alert includes the expected time and date, ensuring users stay informed.
+        </MudListItem>
+    </MudList>
+
+    <MudText Typo="Typo.body1">
+        The platform aims to enhance user productivity by combining task management with real-time weather updates, making it both practical and user-friendly.
+    </MudText>
+
+    <MudSpacer />
+
+    <MudCard Class="mt-4" Style="background-color: #f9f9f9;">
+        <MudCardHeader>
+            <MudText Typo="Typo.h6">Why This Project?</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.body2">
+                This project is designed to merge daily planning with real-time information. Whether you're managing a busy schedule or planning outdoor activities, the integration of tasks and weather updates in one platform simplifies your routine.
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+</MudPaper>

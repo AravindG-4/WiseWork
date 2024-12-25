@@ -5,6 +5,12 @@ using BCrypt.Net;
 //using Isopoh.Cryptography.Argon2;
 using MongoAuth.Shared.Models;
 using MongoAuth.Services;
+using static Supabase.Postgrest.Constants;
+using Supabase.Interfaces;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace MongoAuth.Components;
 
@@ -16,7 +22,9 @@ public class UserContext : ComponentBase
 
     [Inject] MongoDBServices Database { get; set; } = default!;
 
-    [Inject] JwtTokenService TokenService { get; set; } = default!;
+    [Inject] SupabaseService supabaseService { get; set; } = default!;
+
+    [Inject] IConfiguration Configuration { get; set; } = default!;
 
     [Inject] NavigationManager Nav { get; set; } = default!;
 
@@ -30,12 +38,6 @@ public class UserContext : ComponentBase
         Auth = (AuthenticationProvider)Asp;
         //await UserReAuthorize();
     }
-
-    //public virtual Task OnAfterRenderContextAsync(bool firstRender)
-    //{
-    //    return Task.CompletedTask;
-    //}
-
 
     // Cookie Writer
     public async Task WriteCookie(string cookieName, string cookieValue, int durationMinutes = 1)
@@ -55,52 +57,66 @@ public class UserContext : ComponentBase
         await _jsRuntime.InvokeVoidAsync("CookieRemover.Delete", cookieName);
     }
 
-    //public async Task<bool> Login()
-    //{
-    //    if (await UserReAuthorize()) { return true; }
-    //    return false;
-    //}
+    public async Task<string> ModifyTokenRole(string token, string role)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(token);
 
-    public async Task<bool> Login(string email, string password)
+        var claims = jwtToken.Claims.ToList();
+        var newClaims = claims.Where(c => c.Type != "role").ToList(); // Remove the existing role claim
+        newClaims.Add(new Claim("role", role)); // Add the new role claim
+
+        var key = Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]);
+        var signingKey = new SymmetricSecurityKey(key);
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+
+        var updatedToken = new JwtSecurityToken(
+            issuer: Configuration["Jwt:Issuer"],
+            //audience: "authenticated",
+            claims: newClaims,
+            notBefore: jwtToken.ValidFrom,
+            expires: jwtToken.ValidTo,
+            signingCredentials: credentials
+        );
+
+        var newToken = handler.WriteToken(updatedToken);
+
+        Console.WriteLine("Updated Token Created: " + newToken);
+        return newToken;
+    }
+
+    public async Task<bool> LoginAsync(string email, string password)
 
     {
         // Check if the input is empty
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { return false; }
 
-        var user = await Database.GetUserByEmail(email);
+        var user = await supabaseService.GetUserByEmail(email);
 
         // check if the user is Valid
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password)) { return false; }
+        if (user == null) { return false; }
 
-        var token = TokenService.CreateSessionToken(user);
+        var token = await supabaseService.LoginAsync(email, password);
+        if (token == null) { return false; }
         Console.WriteLine("Token Created: " + token);
-        await WriteCookie("auth_token", token, 30);
+        var updatedToken = await ModifyTokenRole(token, user.role ?? "user");
+        await WriteCookie("auth_token", updatedToken, 60);
         Auth.SetUser(user);
         Console.WriteLine("user set");
-        //Auth.NotifyUserAuthentication();
-        //Database.UpdateUserToken(user, token);
         return true;
     }
 
-    public async Task Logout(string userid)
+    public async Task Logout()
     {
+        Console.WriteLine("Logging out");
         await DeleteCookie("auth_token");
-        //await Database.RemoveUserToken(userid);
+        await supabaseService.LogoutAsync();
+        //await Task.Delay(1000);
+        Console.WriteLine("Logged out");
         Auth.SetUser(null);
-        NavTo("/");
+        //await Task.Delay(1000);
+        Nav.NavigateTo("/login", forceLoad: true);
     }
-
-    //public async Task<bool> UserReAuthorize()
-    //{
-    //    string token = await ReadCookie("auth_token");
-    //    if (string.IsNullOrEmpty(token)) { return false; }
-
-    //    var user = await Database.GetUserByToken(token);
-    //    if (user == null) { return false; }
-
-    //    Auth.SetUser(user);
-    //    return true;
-    //}
 
     public void NavTo(string path, bool refresh = true)
     {

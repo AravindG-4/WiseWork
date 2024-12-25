@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject MongoDBServices mongoDBServices
+@inject SupabaseService supabaseService
 @inject UserFavService UserFavService
 @inject NavigationManager NavigationManager
 @inject WeatherFetchService WeatherFetchService
@@ -155,8 +156,9 @@
             role = user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
             Console.WriteLine(email);
 
-            authuser = await mongoDBServices.GetUserByEmail(email);
-            userId = authuser.Id;
+            authuser = await supabaseService.GetUserByEmail(email);
+            Console.WriteLine($"Authuser from Home: {authuser?.id}");
+            userId = (authuser.id).ToString();
             Console.WriteLine($"Got User : {userId}");
             if (role != "admin")
             {
@@ -207,7 +209,7 @@
         switch(Location)
         {
             case 1:
-                NavigationManager.NavigateTo("/about");
+                NavigationManager.NavigateTo("/about-project");
                 break;
             case 2:
                 NavigationManager.NavigateTo("/counter");
@@ -219,7 +221,7 @@
                 NavigationManager.NavigateTo("/todo");
                 break;
             case 5:
-                NavigationManager.NavigateTo("/stacks");
+                NavigationManager.NavigateTo("/stacks-used");
                 break;
             case 6:
                 NavigationManager.NavigateTo("/openweather");

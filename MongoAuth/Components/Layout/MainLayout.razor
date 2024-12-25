@@ -3,7 +3,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserContext UserContext
 @inject MongoDBServices _mongoDbService
-@inject UserFavService UserFavService
+
 <CascadingAuthenticationState>
 <MudThemeProvider />
 <MudDialogProvider />
@@ -15,7 +15,7 @@
 
             <MudText onclick="@NavTo" Typo="Typo.h5" Class="ml-3" Style="color: white; display: flex; align-items: center;">
                 <MudIcon Class="mr-1" Icon="@Icons.Custom.Brands.MudBlazor" />
-                A Blazor Powered Application
+                A Blazor Application
             </MudText>
 
             <MudSpacer />
@@ -29,15 +29,15 @@
                 <Authorized>
                     <MudMenu Icon="@Icons.Material.Rounded.AccountCircle" Color="Color.Info" Size="Size.Large" Class="mr-3">
                         <MudMenuItem>
-                            <strong>Name: </strong>@AuthUser.Username
+                            <strong>Name: </strong>@userName
                         </MudMenuItem>
                         <MudMenuItem>
-                            <strong>Email: </strong>@AuthUser.Email
+                            <strong>Email: </strong>@email
                         </MudMenuItem>
                         <MudMenuItem>
-                            <strong>Role: </strong>@AuthUser.Role
+                            <strong>Role: </strong>@role
                         </MudMenuItem>
-                        <LogoutText />
+                        <LogoutText/>
                     </MudMenu>
                 </Authorized>
                 <NotAuthorized>
@@ -62,8 +62,10 @@
 </CascadingAuthenticationState>
 
 @code {
-    private User? AuthUser { get; set; }
+    // private User? AuthUser { get; set; }
+    private string? userName { get; set; }
     private string? email { get; set; }
+    private string? role { get; set; }
     private string? favCity { get; set; }
     private string? favWeather { get; set; }
     protected override async Task OnInitializedAsync()
@@ -73,12 +75,10 @@
 
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
-            // userName = user.FindFirst("http:schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+            userName = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
             email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
-            // role = user.FindFirst("http:schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+            role = user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
             Console.WriteLine(email);
-            AuthUser = await _mongoDbService.GetUserByEmail(email);
-            Console.WriteLine($"AuthUser from MainLayout: {AuthUser.Username}");
         }
     }
 

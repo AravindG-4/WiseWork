@@ -1,0 +1,26 @@
+﻿@page "/stacks-used"
+@using MudBlazor
+@inject NavigationManager Navigation
+
+<PageTitle>Stacks Used</PageTitle>
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Stacks Used</MudText>
+    <MudText Typo="Typo.body1">
+        - The project is built using the <b>Microsoft Blazor framework</b> with <b>C#</b> for development. <br />
+        - UI components are styled with <b>MudBlazor</b> and <b>Bootstrap</b> for a sleek and responsive design. <br />
+        - <b>Supabase</b> is used for the User Management System, registering user and maintaining sessions. <br />
+        - <b>MongoDB Atlas</b> serves as the database, storing user data and task information. <br />
+        - User management is implemented using <b>JWT (JSON Web Token)</b> authentication and <b>cookie-based storage</b> for secure access. <br />
+        - Weather data is fetched using the <b>OpenWeather API</b>, providing real-time updates. <br />
+    </MudText>
+    <MudText Typo="Typo.h6" Class="mt-4">Useful Links:</MudText>
+    <MudList T="MudLink">
+        <MudListItem><a href="https://dotnet.microsoft.com/en-us/apps/aspnet/web-apps/blazor" target="_blank">Blazor Official Documentation</a></MudListItem>
+        <MudListItem><a href="https://github.com/MudBlazor/MudBlazor" target="_blank">MudBlazor GitHub Repository</a></MudListItem>
+        <MudListItem><a href="https://supabase.com/" target="_blank">Supabase</a></MudListItem>
+        <MudListItem><a href="https://www.mongodb.com/atlas" target="_blank">MongoDB Atlas</a></MudListItem>
+        <MudListItem><a href="https://jwt.io/" target="_blank">JSON Web Tokens (JWT)</a></MudListItem>
+        <MudListItem><a href="https://openweathermap.org/api" target="_blank">OpenWeather API</a></MudListItem>
+    </MudList>
+</MudPaper>

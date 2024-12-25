@@ -1,9 +1,11 @@
 ﻿@page "/todo"
 @rendermode InteractiveServer
-@attribute [CustomAuthorize("user")]
+@attribute [CustomAuthorize("admin")]
 @using MongoAuth.Shared.Models
 @inject NavigationManager Navigation
 @inject MongoDBServices MongoService
+@inject SupabaseService supabaseService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>To-Do</PageTitle>
 
@@ -78,6 +80,8 @@
 @code
 {
     public string UserInput { get; set; }
+    public string? email { get; set; }
+    private User? Authuser { get; set; }
 
     private List<ToDo> PendingToDos = new List<ToDo>();
     private List<ToDo> CompletedToDos = new List<ToDo>();
@@ -86,6 +90,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+            Console.WriteLine(email);
+            Authuser = await supabaseService.GetUserByEmail(email);
+        }
         await LoadToDos();
     }
 

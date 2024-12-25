@@ -5,6 +5,7 @@
 @using MongoAuth.Services
 @using MongoAuth.Shared.Models
 @inject MongoDBServices mongoDBServices
+@inject SupabaseService supabaseService
 @inject UserFavService UserFavService
 @inject NavigationManager Navigation
 @inject WeatherFetchService WeatherFetchService
@@ -26,7 +27,7 @@
         }
         else
         {
-            <MudText Typo="Typo.body1" Class="mt-3 mb-5 mr-5">
+            <MudText Typo="Typo.body1" Class="mt-5 mb-5 mr-5">
                 No Favourite City
             </MudText>
         }
@@ -82,7 +83,7 @@
                                 <MudText>
                                     <strong>Time:</strong> @forecast.Time <br />
                                     <strong>Temperature:</strong> @forecast.TemperatureC °C <br />
-                                    @if (forecast.Summary == favWeather.ToLower())
+                                    @if (forecast.Summary == favWeather?.ToLower())
                                     {
                                         <strong>Summary:</strong>
                                         <span style="background-color: green; color: white; padding: 2px 5px;">
@@ -133,8 +134,8 @@
         }
 
         Console.WriteLine("Getting User");
-        authuser = await mongoDBServices.GetUserByEmail(email);
-        userId = authuser.Id;
+        authuser = await supabaseService.GetUserByEmail(email);
+        userId = (authuser.id).ToString();
         Console.WriteLine($"Got User : {userId}");
         await UserFavService.GetFavouritesAsync(userId);
         favCity = UserFavService.GetFavCity();
@@ -146,7 +147,10 @@
         // Check if the 'trigger' parameter is present and true
         if (queryParameters.ContainsKey("trigger") && queryParameters["trigger"] == "true")
         {
-            await GetWeatherDataFav();
+            if (favCity != null)
+            {
+                await GetWeatherDataFav();
+            }
         }
 
     }

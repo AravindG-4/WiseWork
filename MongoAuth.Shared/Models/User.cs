@@ -1,30 +1,29 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using Supabase.Postgrest.Attributes;
+using Supabase.Postgrest.Models;
 using System.ComponentModel.DataAnnotations;
-using MongoAuth.Shared.Models;
 
 namespace MongoAuth.Shared.Models
 {
-    public class User
+    [Table("Users")]
+    public class User : BaseModel
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; } = ObjectId.GenerateNewId().ToString();
-
+        [PrimaryKey("id",true)]
         [Required]
-        [BsonElement("username")]
-        public string? Username { get; set; }
+        public Guid id { get; set; } // Matches int8 in Supabase
 
-        [Required]
-        [EmailAddress]
-        [BsonElement("email")]
-        public string Email { get; set; }
+        [Column("name")]
+        public string name { get; set; } = string.Empty; // User's username
 
-        [Required]
-        [BsonElement("password")]
-        public string Password { get; set; }
+        [Column("email")]
+        public string email { get; set; } = string.Empty; // User's email
 
-        [BsonElement("role")]
-        public string Role { get; set; } = "user"; // Default role
+        [Column("role")]
+        public string role { get; set; } = "user"; // User's role
+
+        [Column("created_at")]
+        public DateTime created_at { get; set; } = DateTime.UtcNow; // Creation timestamp
+
+        //[Column("password")]
+        //public string PasswordHash { get; set; } = string.Empty; // Hashed password for authent // Default role
     }
 }

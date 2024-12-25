@@ -19,13 +19,16 @@ namespace MongoAuth.Services
             UserFavService = userFavService;
         }
 
-        public async Task<List<WeatherForecast>?> GetWeatherData(string userId, string SearchCity)
+        public async Task<List<WeatherForecast>?> GetWeatherData(string userId, string SearchCity, bool insert=true)
         {
             if (!string.IsNullOrWhiteSpace(SearchCity))
             {
                 Console.WriteLine($"Fetching weather data for {SearchCity}...");
 
-                await UserFavService.InsertNewCityAsync(userId, SearchCity);
+                if (insert)
+                {
+                    await UserFavService.InsertNewCityAsync(userId, SearchCity);
+                }
                 //favCity = UserFavService.GetFavCity();
 
                 var forecastList = await FetchWeatherForecastAsync(SearchCity);
@@ -34,7 +37,6 @@ namespace MongoAuth.Services
                 {
                     Console.WriteLine($"Received weather data for {SearchCity}");
 
-                    // Add new forecast list
                     forecasts = forecastList;
                     return forecasts;
                 }
@@ -55,7 +57,6 @@ namespace MongoAuth.Services
         {
             try
             {
-                //string apiKey = Configuration["OpenWeather:API_KEY"];
                 var url = $"https://api.openweathermap.org/data/2.5/forecast?q={cityName}&appid={apiKey}&units=metric";
                 Console.WriteLine($"Sending request to: {url}");
 
@@ -87,23 +88,26 @@ namespace MongoAuth.Services
 
         public async Task<MarkupString?> NextFavAlert(string userId, string favCity, string favWeather)
         {
-            Console.WriteLine("From NextFavAlert");
-            var fcasts = await GetWeatherData(userId, favCity);
-            Console.WriteLine($"From NextFavAlert favCasts: {fcasts}");
-            if (fcasts != null)
-            {
-                foreach (var groupedForecast in fcasts.GroupBy(f => f.Date))
+            if (favCity != null && favWeather != null) 
+            { 
+                Console.WriteLine("From NextFavAlert");
+                var fcasts = await GetWeatherData(userId, favCity, false);
+                Console.WriteLine($"From NextFavAlert favCasts: {fcasts}");
+                if (fcasts != null)
                 {
-                    foreach (var forecast in groupedForecast)
+                    foreach (var groupedForecast in fcasts.GroupBy(f => f.Date))
                     {
-                        if (forecast.Summary == favWeather.ToLower())
+                        foreach (var forecast in groupedForecast)
                         {
-                            Console.WriteLine($"Returning Weather Matched");
-                            return new MarkupString($"The weather in {favCity} will be {favWeather} on <b>{forecast.Date.ToShortDateString()}</b> at {forecast.Time}");
+                            if (forecast.Summary == favWeather?.ToLower())
+                            {
+                                Console.WriteLine($"Returning Weather Matched");
+                                return new MarkupString($"The weather in {favCity} will be {favWeather} on <b>{forecast.Date.ToShortDateString()}</b> at {forecast.Time}");
+                            }
                         }
                     }
-                }
                 return null;
+                }
             }
             return null;
         }

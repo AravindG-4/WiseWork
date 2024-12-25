@@ -22,6 +22,10 @@ namespace MongoAuth.Services
         // Fetch user's favorite cities and initialize the list and counts
         public async Task GetFavouritesAsync(string? userId)
         {
+            if (userId == UserID)
+            {
+                return;
+            }
             var favourite = await _mongoDBServices.GetUserFavourites(userId);
             UserID = userId;
             if (favourite == null)
@@ -55,14 +59,8 @@ namespace MongoAuth.Services
             Console.WriteLine($"Favourite Weather : {FavWeather}");
         }
 
-        // Insert or update a city in the favorites dictionary
         public async Task InsertNewCityAsync(string userId, string city)
         {
-            //if (!UserFavDetails.Any())
-            //{
-            //    await GetFavouritesAsync(userId);
-            //}
-
             if (UserFavDetails.ContainsKey(city))
             {
                 UserFavDetails[city]++;
@@ -97,7 +95,7 @@ namespace MongoAuth.Services
 
             await _mongoDBServices.UpdateFavouriteCities(userId, favCity);
 
-            // Update local variables
+
             FavCities = UserFavDetails.Keys.ToList();
             LeastFavCount = UserFavDetails.Values.Min();
             MostFavCount = UserFavDetails.Values.Max();
@@ -111,7 +109,9 @@ namespace MongoAuth.Services
         public string? GetFavCity()
         {
             if (!UserFavDetails.Any())
+            {
                 return null;
+            }
 
             var favCity = UserFavDetails.FirstOrDefault(x => x.Value == MostFavCount).Key ?? null;
             if (favCity != null)

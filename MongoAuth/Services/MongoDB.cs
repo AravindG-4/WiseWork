@@ -5,22 +5,29 @@ using MongoDB.Bson;
 using System.Threading.Tasks;
 using BCrypt.Net;
 using Newtonsoft.Json.Linq;
-
+using Supabase;
+using Microsoft.AspNetCore.Components.Authorization;
+using static Supabase.Postgrest.Constants;
+using Supabase.Gotrue;
 namespace MongoAuth.Services
 {
     public class MongoDBServices
     {
         private readonly IMongoCollection<ToDo> _todoCollection;
-        public readonly IMongoCollection<User> _usersCollection;
         public readonly IMongoCollection<Favourites> _favCollection;
+        public readonly Supabase.Client _supabaseClient;
+        public readonly IHttpContextAccessor _httpContextAccessor;
 
-        public MongoDBServices(IConfiguration configuration)
+        public MongoDBServices(IConfiguration configuration, Supabase.Client supabaseClient, IHttpContextAccessor httpContextAccessor)
         {
             var MongoUrl = configuration["MongoDB:URL"];
             var DatabaseName = configuration["MongoDB:DBNAME"];
             var ToDoCollectionName = configuration["MongoDB:TODO:COLLECTION"];
-            var UserCollectionName = configuration["MongoDB:USERS:COLLECTION"];
             var FavCollectionName = configuration["MongoDB:FAVOURITES:COLLECTION"];
+
+            _supabaseClient = supabaseClient;
+            _httpContextAccessor = httpContextAccessor;
+            //Auth = auth;
 
             Console.WriteLine("Service Constructor");
             var client = new MongoClient(MongoUrl);
@@ -28,7 +35,6 @@ namespace MongoAuth.Services
             var database = client.GetDatabase(DatabaseName);
             Console.WriteLine("Database get");
             _todoCollection = database.GetCollection<ToDo>(ToDoCollectionName);
-            _usersCollection = database.GetCollection<User>(UserCollectionName);
             _favCollection = database.GetCollection<Favourites>(FavCollectionName);
             Console.WriteLine("Collection get");
         }
@@ -66,58 +72,6 @@ namespace MongoAuth.Services
             var filter = Builders<ToDo>.Filter.Eq(task => task.Id, id);
             await _todoCollection.DeleteOneAsync(filter);
         }
-
-
-        //User Operations and Services
-        public async Task<User> GetUserByEmail(string email)
-        {
-            return await _usersCollection.Find(user => user.Email == email).FirstOrDefaultAsync();
-        }
-
-        public async Task<User> GetUserById(string userid)
-        {
-            return await _usersCollection.Find(user => user.Id == userid).FirstOrDefaultAsync();
-        }
-
-        //public async Task<User> GetUserByToken(string token)
-        //{
-        //    return await _usersCollection.Find(user => user.JwtToken == token).FirstOrDefaultAsync();
-        //}
-
-        public async Task<User> RegisterUser(User user)
-        {
-            // Check if user already exists
-            var existingUser = await _usersCollection.Find(u => u.Email == user.Email || u.Username == user.Username).FirstOrDefaultAsync();
-            if (existingUser != null)
-                throw new Exception("User with this email or username already exists");
-
-            // Hash password
-            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-
-            // Set default role if not specified
-            if (string.IsNullOrEmpty(user.Role))
-                user.Role = "user";
-
-            await _usersCollection.InsertOneAsync(user);
-            return user;
-        }
-
-        //public async Task UpdateUserToken(User user, string token)
-        //{
-        //    var id = user.Id;
-        //    var filter = Builders<User>.Filter.Eq(User => User.Id, id);
-        //    var update = Builders<User>.Update.Set(User => User.JwtToken, token);
-
-        //    await _usersCollection.UpdateOneAsync(filter, update);
-        //}
-
-        //public async Task RemoveUserToken(string userid)
-        //{
-        //    var filter = Builders<User>.Filter.Eq(User => User.Id, userid);
-        //    var update = Builders<User>.Update.Set(User => User.JwtToken, null);
-
-        //    await _usersCollection.UpdateOneAsync(filter, update);
-        //}
 
 
         //User Operations and Services

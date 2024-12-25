@@ -1,7 +1,7 @@
 using MongoAuth.Components;
 using MudBlazor.Services;
 using Microsoft.AspNetCore.ResponseCompression;
-using MongoAuth.Hubs;
+//using MongoAuth.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +13,7 @@ using MongoAuth.Shared.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.JSInterop;
-//using Microsoft.AspNetCore.Authentication.Cookies;
+using Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,13 +30,22 @@ builder.Services.AddSingleton(sp =>
     var mongoConnectionString = configuration["MongoDB:URL"];
     return new MongoClient(mongoConnectionString);
 });
+var supabaseOptions = new Supabase.SupabaseOptions
+{
+    AutoRefreshToken = true,
+};
+var supabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseKey = builder.Configuration["Supabase:Key"];
+var supabaseClient = new Supabase.Client(supabaseUrl, supabaseKey, supabaseOptions);
+
+builder.Services.AddSingleton(supabaseClient);
 builder.Services.AddSingleton<MongoDBServices>();
-builder.Services.AddScoped<JwtTokenService>();
-builder.Services.AddSingleton<UserFavService>();
-builder.Services.AddSingleton<WeatherFetchService>();
+builder.Services.AddSingleton<SupabaseService>();
+//builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddScoped<UserFavService>();
+builder.Services.AddScoped<WeatherFetchService>();
 //builder.Services.AddSingleton<IJSRuntime>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-//builder.Services.AddScoped<ICookieService, CookieService>();
 builder.Services.AddSingleton<UserContext>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, AuthenticationProvider>();
@@ -66,10 +75,10 @@ builder.Services.AddAuthentication(options =>
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuerSigningKey = true,
+        ValidateIssuerSigningKey = false,
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = true,
-        ValidateAudience = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidateLifetime = true
@@ -80,43 +89,15 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            context.Token = context.Request.Cookies["auth_token"];
+            if (string.IsNullOrEmpty(context.Token))
+            {
+                context.Token = context.Request.Cookies["auth_token"];
+            }
             return Task.CompletedTask;
         }
     };
-
-    //builder.Services.ConfigureApplicationCookie(options =>
-    //{
-    //    options.Cookie.HttpOnly = true;
-    //    options.Cookie.SameSite = SameSiteMode.None; // Ensure the cookie works across sites.
-    //    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    //});
-    // Special configuration for SignalR authentication
-    //options.Events = new JwtBearerEvents
-    //{
-    //    OnMessageReceived = context =>
-    //    {
-    //        var accessToken = context.Request.Query["access_token"];
-    //        var path = context.HttpContext.Request.Path;
-
-    //        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/mongoToDo"))
-    //        {
-    //            context.Token = accessToken;
-    //        }
-    //        return Task.CompletedTask;
-    //    }
-    //};
 });
 
-//builder.Services.AddDistributedMemoryCache();
-
-// Enable sessions
-//builder.Services.AddSession(options =>
-//{
-//    options.IdleTimeout = TimeSpan.FromMinutes(30);
-//    options.Cookie.HttpOnly = true;
-//    options.Cookie.IsEssential = true;
-//});
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme,
@@ -151,6 +132,17 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 //app.UseSession();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseStatusCodePages(context =>
+{
+    if (context.HttpContext.Response.StatusCode == 401)
+    {
+        context.HttpContext.Response.Redirect("/login");
+    }
+    return Task.CompletedTask;
+});
+
 
 app.UseAntiforgery();
 
@@ -166,19 +158,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode();
     //.AddAdditionalAssemblies(typeof(MongoAuth.Client._Imports).Assembly);
 
-app.MapHub<ToDoHub>("/mongoToDo");
+//app.MapHub<ToDoHub>("/mongoToDo");
 
-app.UseAuthentication();
-app.UseAuthorization();
-app.Use(async (context, next) =>
-{
-    await next();
-
-    if (context.Response.StatusCode == 401)
-    {
-        // Instead of returning 401, redirect to login
-        context.Response.Redirect("/login");
-    }
-});
 
 app.Run();

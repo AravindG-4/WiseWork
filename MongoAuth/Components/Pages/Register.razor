@@ -1,9 +1,15 @@
 ﻿@page "/register"
 @rendermode InteractiveServer
+@inherits UserContext
 @using MongoAuth.Services
-@inject MongoDBServices MongoService
+@inject SupabaseService supabaseService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider Auth
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
     <MudCard>
@@ -27,12 +33,14 @@
         </MudCardContent>
         <MudCardActions>
             <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary"
-                       Class="ml-auto" OnClick="HandleRegister" Disabled="@(!success)">Register</MudButton>
+                       Class="ml-auto" OnClick="HandleRegister" Disabled="@(isLoading)">Register</MudButton>
         </MudCardActions>
     </MudCard>
 </MudContainer>
 
 @code {
+    private bool isLoading = false;
+
     MudForm form;
     bool success;
     string username = string.Empty;
@@ -42,28 +50,16 @@
 
     private async Task HandleRegister()
     {
+        isLoading = true;
         if (password != confirmPassword)
         {
             Snackbar.Add("Passwords do not match", Severity.Error);
             return;
         }
-        var temp = await MongoService.GetUserByEmail(email);
-        if (temp != null)
-        {
-            Snackbar.Add("Email already exists", Severity.Error);
-            return;
-        }
         try
         {
-            var user = new User
-                {
-                    Username = username,
-                    Email = email,
-                    Password = password,
-                    // Roles = "user" Default role
-                };
-
-            await MongoService.RegisterUser(user);
+            var RegisterResult = await supabaseService.RegisterUser(email, password, username);
+            Console.WriteLine("RegisterResult: " + RegisterResult);
             Snackbar.Add("Registration successful!", Severity.Success);
             NavigationManager.NavigateTo("/login");
         }
@@ -71,5 +67,6 @@
         {
             Snackbar.Add($"Registration failed: {ex.Message}", Severity.Error);
         }
+        isLoading = false;
     }
 }
